@@ -8,7 +8,11 @@ export const CONTRACT_ABI = SentinelPayArtifact.abi;
 
 export const getProvider = () => {
   if (typeof window !== 'undefined' && window.ethereum) {
-    return new ethers.BrowserProvider(window.ethereum);
+    let eth = window.ethereum;
+    if (Array.isArray(window.ethereum.providers) && window.ethereum.providers.length > 0) {
+      eth = window.ethereum.providers.find((p) => p.isMetaMask) ?? window.ethereum;
+    }
+    return new ethers.BrowserProvider(eth);
   }
   throw new Error('MetaMask is not installed');
 };

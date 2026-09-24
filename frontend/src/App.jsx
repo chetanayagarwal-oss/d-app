@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from './utils/contract';
+import { CONTRACT_ADDRESS, CONTRACT_ABI, getProvider } from './utils/contract';
 import { initNeuralCanvas } from './utils/motion';
 
 import ConnectWallet from './components/ConnectWallet';
@@ -57,7 +57,7 @@ function App() {
 
     const run = async () => {
       try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
+        const provider = getProvider();
 
         // Balance — 3 s timeout
         try {
