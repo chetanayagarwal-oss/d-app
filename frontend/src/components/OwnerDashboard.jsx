@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getContractWithSigner, getProvider } from '../utils/contract';
 import { ethers } from 'ethers';
+import { animateCounter } from '../utils/motion';
 
 function OwnerDashboard({ account }) {
   const [agents, setAgents] = useState([]);
@@ -8,6 +9,10 @@ function OwnerDashboard({ account }) {
   const [newLimit, setNewLimit] = useState('');
   const [depositAmount, setDepositAmount] = useState('');
   const [contractBalance, setContractBalance] = useState('0');
+
+  // Animated display counters
+  const [dispTotal, setDispTotal] = useState(0);
+  const [dispActive, setDispActive] = useState(0);
 
   const [isRegistering, setIsRegistering] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
@@ -33,6 +38,9 @@ function OwnerDashboard({ account }) {
         });
       }
       setAgents(loaded);
+      // Animate counters
+      animateCounter(0, loaded.length, 800, setDispTotal);
+      animateCounter(0, loaded.filter(a => !a.isPaused).length, 800, setDispActive);
 
       // contract balance
       const provider = getProvider();
@@ -105,12 +113,12 @@ function OwnerDashboard({ account }) {
       <div className="stats-row">
         <div className="stat-card">
           <div className="stat-icon">🤖</div>
-          <div className="stat-value">{agents.length}</div>
+          <div className="stat-value">{dispTotal}</div>
           <div className="stat-label">Registered Agents</div>
         </div>
         <div className="stat-card">
           <div className="stat-icon">✅</div>
-          <div className="stat-value">{agents.filter(a => !a.isPaused).length}</div>
+          <div className="stat-value">{dispActive}</div>
           <div className="stat-label">Active Agents</div>
         </div>
         <div className="stat-card">

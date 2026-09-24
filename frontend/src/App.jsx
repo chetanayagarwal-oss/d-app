@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getContractWithProvider } from './utils/contract';
 import { ethers } from 'ethers';
+import { initParticles } from './utils/motion';
 
 import ConnectWallet from './components/ConnectWallet';
 import OwnerDashboard from './components/OwnerDashboard';
@@ -12,14 +13,18 @@ function App() {
   const [balance, setBalance] = useState('0');
   const [isOwner, setIsOwner] = useState(false);
 
+  // Boot particle system
+  useEffect(() => {
+    const cleanup = initParticles();
+    return cleanup;
+  }, []);
+
   // Listen for account changes
   useEffect(() => {
     if (!window.ethereum) return;
-
     window.ethereum.on('accountsChanged', (accounts) => {
       setAccount(accounts.length > 0 ? accounts[0] : '');
     });
-
     window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
       if (accounts.length > 0) setAccount(accounts[0]);
     });
@@ -33,7 +38,6 @@ function App() {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const bal = await provider.getBalance(account);
         setBalance(parseFloat(ethers.formatEther(bal)).toFixed(4));
-
         const contract = getContractWithProvider();
         const owner = await contract.owner();
         setIsOwner(owner.toLowerCase() === account.toLowerCase());
@@ -46,6 +50,12 @@ function App() {
 
   return (
     <>
+      {/* Ambient orbs */}
+      <div className="grid-bg" />
+      <div className="orb orb-1" />
+      <div className="orb orb-2" />
+      <div className="orb orb-3" />
+
       {/* Navbar + Hero */}
       <ConnectWallet
         account={account}
@@ -57,10 +67,8 @@ function App() {
 
       {account && (
         <main className="container">
-          {/* Owner Dashboard (only for contract owner) */}
           {isOwner && <OwnerDashboard account={account} />}
 
-          {/* Simulator + Log */}
           <div className="dashboard-grid">
             <AgentSimulator account={account} />
             <TransactionLog />
