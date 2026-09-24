@@ -137,9 +137,12 @@ export function initNeuralCanvas() {
   };
 
   /* ── Init ── */
-  const COUNT = Math.min(Math.floor((window.innerWidth * window.innerHeight) / 14000), 70);
+  const COUNT = Math.min(Math.floor((window.innerWidth * window.innerHeight) / 14000), 60);
   let pulses = [];
-  let lastPulse = 0;
+  // lastPulse is seeded from the first rAF timestamp to avoid
+  // spawning thousands of pulses on the very first frames
+  let lastPulse = -1;
+  const PULSE_INTERVAL = 700; // ms between pulses
 
   const init = () => {
     nodes = Array.from({ length: COUNT }, () => new Node());
@@ -147,18 +150,23 @@ export function initNeuralCanvas() {
 
   /* ── Loop ── */
   const loop = (t) => {
+    // Seed lastPulse on the first frame
+    if (lastPulse === -1) lastPulse = t;
+
     ctx.clearRect(0, 0, W, H);
 
     drawLinks(t);
     nodes.forEach(n => { n.update(t); n.draw(); });
 
-    // Spawn pulses periodically
-    if (t - lastPulse > 600 + Math.random() * 800) {
+    // Spawn one pulse every PULSE_INTERVAL ms (guard: need at least 2 nodes)
+    if (nodes.length >= 2 && t - lastPulse > PULSE_INTERVAL + Math.random() * 500) {
       lastPulse = t;
       const i = Math.floor(Math.random() * nodes.length);
-      let j;
-      do { j = Math.floor(Math.random() * nodes.length); } while (j === i);
-      pulses.push(new Pulse(nodes[i], nodes[j]));
+      // Pick a different node — limited attempts to avoid infinite loop
+      let j = i;
+      let attempts = 0;
+      while (j === i && attempts < 10) { j = Math.floor(Math.random() * nodes.length); attempts++; }
+      if (j !== i) pulses.push(new Pulse(nodes[i], nodes[j]));
     }
 
     pulses.forEach(p => { p.update(); p.draw(); });
