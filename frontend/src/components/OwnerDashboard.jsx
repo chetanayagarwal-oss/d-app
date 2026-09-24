@@ -19,8 +19,10 @@ function OwnerDashboard({ account }) {
   const [actionLoading, setActionLoading] = useState(null);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [contractOffline, setContractOffline] = useState(false);
 
   const loadAgents = async () => {
+    setContractOffline(false);
     try {
       const contract = await getContractWithSigner();
       const filter = contract.filters.AgentRegistered();
@@ -38,17 +40,16 @@ function OwnerDashboard({ account }) {
         });
       }
       setAgents(loaded);
-      // Animate counters
       animateCounter(0, loaded.length, 800, setDispTotal);
       animateCounter(0, loaded.filter(a => !a.isPaused).length, 800, setDispActive);
 
-      // contract balance
       const provider = getProvider();
       const contractAddr = await contract.getAddress();
       const bal = await provider.getBalance(contractAddr);
       setContractBalance(parseFloat(ethers.formatEther(bal)).toFixed(4));
     } catch (err) {
-      console.error(err);
+      console.warn('OwnerDashboard: contract not available —', err.message);
+      setContractOffline(true);
     }
   };
 
@@ -135,6 +136,15 @@ function OwnerDashboard({ account }) {
           OWNER DASHBOARD
         </h2>
 
+        {contractOffline && (
+          <div style={{
+            background: 'rgba(255,45,85,0.07)', border: '1px solid rgba(255,45,85,0.2)',
+            borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.25rem',
+            fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--danger)',
+          }}>
+            ⚠ Contract not deployed on this network. Deploy to Sepolia first.
+          </div>
+        )}
         {error && <div className="error-message" style={{ marginBottom: '1.25rem' }}>{error}</div>}
         {successMsg && (
           <div style={{

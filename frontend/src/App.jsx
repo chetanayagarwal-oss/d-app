@@ -7,6 +7,7 @@ import ConnectWallet from './components/ConnectWallet';
 import OwnerDashboard from './components/OwnerDashboard';
 import AgentSimulator from './components/AgentSimulator';
 import TransactionLog from './components/TransactionLog';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Helper: reject after ms
 const withTimeout = (promise, ms) =>
@@ -98,10 +99,16 @@ function App() {
 
       {account && (
         <main className="container">
-          {isOwner && <OwnerDashboard account={account} />}
+          <ErrorBoundary label="OWNER DASHBOARD OFFLINE">
+            {isOwner && <OwnerDashboard account={account} />}
+          </ErrorBoundary>
           <div className="dashboard-grid">
-            <AgentSimulator account={account} />
-            <TransactionLog />
+            <ErrorBoundary label="AGENT SIMULATOR OFFLINE">
+              <AgentSimulator account={account} />
+            </ErrorBoundary>
+            <ErrorBoundary label="TRANSACTION LOG OFFLINE">
+              <TransactionLog />
+            </ErrorBoundary>
           </div>
         </main>
       )}
