@@ -12,65 +12,66 @@ function App() {
   const [balance, setBalance] = useState('0');
   const [isOwner, setIsOwner] = useState(false);
 
+  // Listen for account changes
   useEffect(() => {
-    if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts) => {
-        if (accounts.length > 0) {
-          setAccount(accounts[0]);
-        } else {
-          setAccount('');
-        }
-      });
-      
-      // Initial check if already connected
-      window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
-        if (accounts.length > 0) {
-          setAccount(accounts[0]);
-        }
-      });
-    }
+    if (!window.ethereum) return;
+
+    window.ethereum.on('accountsChanged', (accounts) => {
+      setAccount(accounts.length > 0 ? accounts[0] : '');
+    });
+
+    window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+      if (accounts.length > 0) setAccount(accounts[0]);
+    });
   }, []);
 
+  // Fetch balance + owner status
   useEffect(() => {
-    const fetchAccountDetails = async () => {
-      if (account) {
-        try {
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const bal = await provider.getBalance(account);
-          setBalance(parseFloat(ethers.formatEther(bal)).toFixed(4));
+    const fetch = async () => {
+      if (!account) { setBalance('0'); setIsOwner(false); return; }
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const bal = await provider.getBalance(account);
+        setBalance(parseFloat(ethers.formatEther(bal)).toFixed(4));
 
-          const contract = getContractWithProvider();
-          const owner = await contract.owner();
-          setIsOwner(owner.toLowerCase() === account.toLowerCase());
-        } catch (err) {
-          console.error('Error fetching details:', err);
-        }
-      } else {
-        setBalance('0');
-        setIsOwner(false);
+        const contract = getContractWithProvider();
+        const owner = await contract.owner();
+        setIsOwner(owner.toLowerCase() === account.toLowerCase());
+      } catch (err) {
+        console.error('Error fetching details:', err);
       }
     };
-
-    fetchAccountDetails();
+    fetch();
   }, [account]);
 
   return (
-    <div className="container">
-      <ConnectWallet 
-        account={account} 
-        setAccount={setAccount} 
-        balance={balance} 
-        setBalance={setBalance}
+    <>
+      {/* Navbar + Hero */}
+      <ConnectWallet
+        account={account}
+        setAccount={setAccount}
+        balance={balance}
+        setBalance={() => {}}
         isOwner={isOwner}
       />
 
-      {isOwner && <OwnerDashboard account={account} />}
-      
-      <div className="dashboard-grid">
-        <AgentSimulator account={account} />
-        <TransactionLog />
-      </div>
-    </div>
+      {account && (
+        <main className="container">
+          {/* Owner Dashboard (only for contract owner) */}
+          {isOwner && <OwnerDashboard account={account} />}
+
+          {/* Simulator + Log */}
+          <div className="dashboard-grid">
+            <AgentSimulator account={account} />
+            <TransactionLog />
+          </div>
+        </main>
+      )}
+
+      <footer className="footer">
+        ⬡ SENTINELPAY · AI AGENT PAYMENT FIREWALL · BUILT FOR THE DECENTRALIZED WEB
+      </footer>
+    </>
   );
 }
 
