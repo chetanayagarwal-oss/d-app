@@ -5,7 +5,6 @@ function ConnectWallet({ account, setAccount, balance, isOwner }) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState('');
   const [typed, setTyped] = useState('');
-  const [debug, setDebug] = useState('');
 
   // Typewriter on the hero tagline
   useEffect(() => {
@@ -31,50 +30,34 @@ function ConnectWallet({ account, setAccount, balance, isOwner }) {
   const connect = async () => {
     setIsConnecting(true);
     setError('');
-    setDebug('');
 
     try {
-      // 1. Check MetaMask
-      if (typeof window === 'undefined' || !window.ethereum) {
-        setError('MetaMask not found. Please install it from metamask.io');
-        setIsConnecting(false);
+      if (!window.ethereum) {
+        setError('MetaMask not found. Install it from metamask.io');
         return;
       }
 
-      setDebug('MetaMask detected...');
-
-      // 2. Pick the right provider when multiple exist (Brave, Coinbase, etc.)
+      // Pick MetaMask when multiple wallets are injected (Brave, Coinbase, etc.)
       let eth = window.ethereum;
       if (Array.isArray(window.ethereum.providers) && window.ethereum.providers.length > 0) {
-        const mm = window.ethereum.providers.find((p) => p.isMetaMask);
-        if (mm) eth = mm;
+        eth = window.ethereum.providers.find((p) => p.isMetaMask) ?? window.ethereum;
       }
 
-      setDebug('Requesting accounts...');
-
-      // 3. Request accounts
+      // This is the ONLY async call — shows MetaMask popup, returns accounts
       const accounts = await eth.request({ method: 'eth_requestAccounts' });
 
-      if (!accounts || accounts.length === 0) {
+      if (!accounts?.length) {
         setError('No accounts returned. Please unlock MetaMask.');
-        setIsConnecting(false);
         return;
       }
 
-      setDebug('');
+      // ✅ Set account IMMEDIATELY — balance/owner load in background (App.jsx)
       setAccount(accounts[0]);
 
     } catch (err) {
-      setDebug('');
-      if (err.code === 4001) {
-        setError('You rejected the request in MetaMask.');
-      } else if (err.code === -32002) {
-        setError('MetaMask popup is already open — click the MetaMask icon in your browser toolbar.');
-      } else if (err.code === -32603) {
-        setError('MetaMask internal error. Try refreshing the page.');
-      } else {
-        setError(`Error (${err.code ?? 'unknown'}): ${err.message}`);
-      }
+      if (err.code === 4001)    setError('Connection rejected.');
+      else if (err.code === -32002) setError('MetaMask popup already open — click the MetaMask icon in your toolbar.');
+      else setError(`${err.message || 'Unknown error'}`);
     } finally {
       setIsConnecting(false);
     }
