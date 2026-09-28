@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { typewriter } from '../utils/motion';
+import UserManual from './UserManual';
 
-function ConnectWallet({ account, setAccount, balance, isOwner }) {
+function ConnectWallet({ account, setAccount, balance, isOwner, onBack }) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState('');
   const [typed, setTyped] = useState('');
+  const [manualOpen, setManualOpen] = useState(false);
 
   // Typewriter on the hero tagline
   useEffect(() => {
@@ -79,12 +81,62 @@ function ConnectWallet({ account, setAccount, balance, isOwner }) {
         zIndex: 100,
       }}>
         <div className="header">
-          <div className="header-brand">
-            <h1>SENTINELPAY</h1>
-            <span className="tagline">Neural Payment Security · Ethereum</span>
+          <div className="header-brand" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {onBack && (
+              <button
+                onClick={onBack}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)', fontSize: '0.68rem',
+                  color: 'var(--text-muted)', letterSpacing: '2px',
+                  padding: '0.3rem 0', transition: 'color 0.2s',
+                }}
+                onMouseEnter={e => e.target.style.color = 'var(--neon)'}
+                onMouseLeave={e => e.target.style.color = 'var(--text-muted)'}
+              >
+                ← BACK
+              </button>
+            )}
+            <div>
+              <h1>SENTINELPAY</h1>
+              <span className="tagline">Neural Payment Security · Ethereum</span>
+            </div>
           </div>
 
           <nav className="header-nav">
+            {/* Help button — always visible */}
+            <button
+              id="open-user-manual-btn"
+              onClick={() => setManualOpen(true)}
+              title="User Manual"
+              style={{
+                background: 'rgba(0,212,255,0.07)',
+                border: '1px solid rgba(0,212,255,0.22)',
+                borderRadius: '8px',
+                padding: '0.42rem 0.85rem',
+                color: 'var(--cyan)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.72rem',
+                letterSpacing: '1px',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                transition: 'all 0.25s ease',
+                flexShrink: 0,
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(0,212,255,0.14)';
+                e.currentTarget.style.boxShadow = '0 0 12px rgba(0,212,255,0.3)';
+                e.currentTarget.style.borderColor = 'rgba(0,212,255,0.45)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(0,212,255,0.07)';
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = 'rgba(0,212,255,0.22)';
+              }}
+            >
+              <span style={{ fontSize: '0.85rem' }}>?</span> HELP
+            </button>
+
             {account ? (
               <div className="wallet-info">
                 {isOwner && <span className="badge badge-owner">⬡ OWNER</span>}
@@ -100,7 +152,7 @@ function ConnectWallet({ account, setAccount, balance, isOwner }) {
                   disabled={isConnecting}
                 >
                   {isConnecting
-                    ? <><span className="spinner" /> {debug || 'CONNECTING…'}</>
+                    ? <><span className="spinner" /> CONNECTING…</>
                     : <><span className="dot" /> CONNECT METAMASK</>}
                 </button>
                 {error && (
@@ -170,7 +222,7 @@ function ConnectWallet({ account, setAccount, balance, isOwner }) {
                   style={{ fontSize: '0.85rem', padding: '1rem 2.5rem' }}
                 >
                   {isConnecting
-                    ? <><span className="spinner" /> {debug || 'CONNECTING…'}</>
+                    ? <><span className="spinner" /> CONNECTING…</>
                     : '⬡ CONNECT WALLET TO START'}
                 </button>
 
@@ -213,6 +265,7 @@ function ConnectWallet({ account, setAccount, balance, isOwner }) {
           </div>
         </section>
       )}
+      <UserManual isOpen={manualOpen} onClose={() => setManualOpen(false)} />
     </>
   );
 }

@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
 import { CONTRACT_ADDRESS, CONTRACT_ABI, getProvider } from './utils/contract';
 
+import LandingPage from './components/LandingPage';
 import ConnectWallet from './components/ConnectWallet';
 import OwnerDashboard from './components/OwnerDashboard';
 import AgentSimulator from './components/AgentSimulator';
 import TransactionLog from './components/TransactionLog';
 import ErrorBoundary from './components/ErrorBoundary';
 
-// Reject a promise after `ms` milliseconds
 const withTimeout = (promise, ms) =>
   Promise.race([
     promise,
@@ -16,24 +16,39 @@ const withTimeout = (promise, ms) =>
   ]);
 
 function App() {
+  // 'landing' → show landing page, 'app' → show dApp
+  // Initialise from sessionStorage so a refresh keeps the user on the same page
+  const [page, setPage]       = useState(() => sessionStorage.getItem('sp-page') || 'landing');
   const [account, setAccount] = useState('');
   const [balance, setBalance] = useState('—');
-  const [isOwner, setIsOwner]   = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   const fetchRef = useRef(null);
 
-  // Listen for MetaMask account changes
+  // Wrapper that persists page changes across refreshes
+  const syncPage = (p) => {
+    sessionStorage.setItem('sp-page', p);
+    setPage(p);
+  };
+
+  // Auto-enter app if wallet already connected
   useEffect(() => {
     if (!window.ethereum) return;
 
-    const handleChange = (accounts) =>
+    const handleChange = (accounts) => {
       setAccount(accounts.length > 0 ? accounts[0] : '');
+    };
 
     window.ethereum.on('accountsChanged', handleChange);
 
-    // Restore already-connected account
     window.ethereum
       .request({ method: 'eth_accounts' })
-      .then((accounts) => { if (accounts.length > 0) setAccount(accounts[0]); })
+      .then((accounts) => {
+        if (accounts.length > 0) {
+          setAccount(accounts[0]);
+          // If already connected, go straight to app
+          syncPage('app');
+        }
+      })
       .catch(() => {});
 
     return () => {
@@ -41,7 +56,7 @@ function App() {
     };
   }, []);
 
-  // Background balance + owner check — never blocks UI
+  // Background balance + owner fetch — never blocks UI
   useEffect(() => {
     if (!account) { setBalance('—'); setIsOwner(false); return; }
 
@@ -49,7 +64,6 @@ function App() {
     fetchRef.current = id;
 
     (async () => {
-      // Balance
       try {
         const provider = getProvider();
         const bal = await withTimeout(provider.getBalance(account), 5000);
@@ -57,7 +71,6 @@ function App() {
         setBalance(parseFloat(ethers.formatEther(bal)).toFixed(4));
       } catch { if (fetchRef.current === id) setBalance('?'); }
 
-      // Owner check
       try {
         const provider = getProvider();
         const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
@@ -68,15 +81,30 @@ function App() {
     })();
   }, [account]);
 
+  // ── Landing page ──
+  if (page === 'landing') {
+    return (
+      <>
+        <div className="hex-grid" />
+        <LandingPage onEnter={() => syncPage('app')} />
+      </>
+    );
+  }
+
+  // ── dApp ──
   return (
     <>
       <div className="hex-grid" />
 
       <ConnectWallet
         account={account}
-        setAccount={setAccount}
+        setAccount={(acc) => {
+          setAccount(acc);
+          if (acc) syncPage('app');
+        }}
         balance={balance}
         isOwner={isOwner}
+        onBack={() => syncPage('landing')}
       />
 
       {account && (
